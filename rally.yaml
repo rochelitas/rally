@@ -1,0 +1,275 @@
+openapi: 3.0.0
+info:
+  title: Rally Game Data Description
+  description: this is the complete description of all entities in the rally game 
+  license:
+    name: WTFPL
+    url: https://en.wikipedia.org/wiki/WTFPL
+  version: 0.0.1
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/GOUR/Rally/0.0.1
+  - url: https://rally.port0.org/dev/v1/
+    description: Development server
+  - url: https://rally.port0.org/test/v1/
+    description: Test server
+  - url: https://rally.port0.org/stg/v1/
+    description: Staging server
+  - url: https://rally.port0.org/v1/
+    description: Production server
+paths:
+  /ping:
+    get:
+      description: check if the server alive
+      responses:
+        '200':
+          description: server is alive
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: pong
+  /maps:
+    get:
+      description: retrieve list of available maps
+      responses:
+        '200':
+          description: good response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Directory"
+  /map/{mapId}:
+    get:
+      summary: retrieve a map by its Id
+      parameters:
+        - in: path
+          name: mapId
+          schema:
+            type: string
+          required: true
+      responses:
+        '404':
+          description: map not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '200':
+          description: good response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Map"
+  /step:
+    post:
+      summary: validate the step and calculate the new game state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameInput"
+      responses:
+        '404':
+          description: map not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '200':
+          description: good response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameOutput"
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        reference:
+          type: string
+      required:
+        - code
+        - message
+      additionalProperties: false
+      example:
+        code: 0
+        message: OK
+    Directory:
+      type: array
+      items:
+        type: string
+      example:
+        - sample1
+        - sample2
+    Point:
+      type: object
+      properties:
+        x:
+          type: integer
+          format: int32
+        y:
+          type: integer
+          format: int32
+      required:
+        - x
+        - y
+      additionalProperties: false
+      example:
+        x: 7
+        y: 3
+    Points:
+      type: array
+      items:
+        $ref: "#/components/schemas/Point"
+      example:
+        - x: 1
+          y: 2
+        - x: 3
+          y: 4
+    MapId:
+      type: string
+      example: "sample_map"
+    Map:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/MapId"
+        road:
+          $ref: "#/components/schemas/Points"
+        finish:
+          $ref: "#/components/schemas/Points"
+        start:
+          $ref: "#/components/schemas/Point"
+      required:
+        - id
+        - road
+        - finish
+        - start
+      additionalProperties: false
+      example:
+        id: sample_map
+        road:
+          - x: 1
+            y: 1
+          - x: 7
+            y: 1
+          - x: 9
+            y: 3
+          - x: 9
+            y: 8
+          - x: 1
+            y: 8
+          - x: 1
+            y: 6
+          - x: 5
+            y: 6
+          - x: 6
+            y: 4
+          - x: 5
+            y: 3
+          - x: 1
+            y: 3
+        finish:
+          - x: 1
+            y: 6
+          - x: 4
+            y: 6
+          - x: 4
+            y: 8
+          - x: 1
+            y: 8
+        start: 
+          x: 2
+          y: 2
+    Step:
+      type: string
+      enum:
+        - N
+        - E
+        - S
+        - W
+        - X
+      example: X
+    Steps:
+      type: string
+      format: "[NESWX]*"
+      example: "EESWWWXNW"
+    Outcome:
+      type: string
+      enum:
+        - query
+        - invalid
+        - continue
+        - terminated
+        - finished
+      additionalProperties: false
+      example: continue
+    GameInput:
+      type: object
+      properties:
+        mapId:
+          $ref: "#/components/schemas/MapId"
+        steps:
+          $ref: "#/components/schemas/Steps"
+      required:
+        - mapId
+        - steps
+      additionalProperties: false
+      example:
+        mapId: "sample_map"
+        steps: "EESWWWXNW"
+    GameOutput:
+      type: object
+      properties:
+        trace:
+          $ref: "#/components/schemas/Points"
+        position:
+          $ref: "#/components/schemas/Point"
+        speed:
+          $ref: "#/components/schemas/Point"
+        outcome:
+          $ref: "#/components/schemas/Outcome"
+      required:
+        - trace
+        - position
+        - speed
+        - outcome
+      additionalProperties: false
+      example:
+        trace:
+          - x: 2
+            y: 2
+          - x: 3
+            y: 2
+          - x: 5
+            y: 2
+          - x: 7
+            y: 3
+          - x: 8
+            y: 4
+          - x: 8
+            y: 5
+          - x: 7
+            y: 6
+          - x: 6
+            y: 7
+          - x: 5
+            y: 7
+          - x: 3
+            y: 7
+        position:
+          x: 3
+          y: 7
+        speed:
+          x: -2
+          y: 0
+        outcome: finished
